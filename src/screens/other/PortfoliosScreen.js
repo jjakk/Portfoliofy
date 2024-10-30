@@ -1,6 +1,8 @@
 const PortfoliosScreen = () => {
     return (
-        <div>Portfolios</div>
+        <div>
+            <h1 className="title">This is where your portfolios will show</h1>
+        </div>
     );
 };
 

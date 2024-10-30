@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 const LoginScreen = () => {
@@ -13,7 +14,7 @@ const LoginScreen = () => {
   
   return (
     <div>
-      <h2 className="subtitle">Sign In</h2>
+      <h2 className="title">Login</h2>
       <form
         onSubmit={onLogin}
         className="is-flex is-flex-direction-column is-align-items-flex-start gap-10"
@@ -34,7 +35,8 @@ const LoginScreen = () => {
           value={password}
           onChange={event => setPassword(event.target.value)}
         />
-        <button type="submit" className="button">Sign In</button>
+        <button type="submit" className="button">Login</button>
+        <span>Don't have an account? <Link to="../register">Create one</Link></span>
       </form>
     </div>
   );

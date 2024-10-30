@@ -1,0 +1,7 @@
+@import "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css";
+
+.flex-1 { flex: 1; }
+
+.gap-15 { gap: 15px; }
+.gap-10 { gap: 10px; }
+.gap-5 { gap: 5px; }

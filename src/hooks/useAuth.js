@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocalStorage } from "./useLocalStorage";
+import Api from "../axios/api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -9,6 +10,8 @@ export const AuthProvider = ({ children }) => {
 
   // call this function when you want to authenticate the user
   const login = async (data) => {
+    console.log(data);
+    Api.login(data);
     setUser(data);
     navigate("/portfolios");
   };

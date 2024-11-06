@@ -1,13 +1,15 @@
 -- Created by Vertabelo (http://vertabelo.com)
 -- Last modification date: 2024-10-29 23:04:59.607
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+
 -- tables
 -- Table: PORTFOLIOS
 CREATE TABLE PORTFOLIOS (
     PORTFOLIO_ID varchar(20)  NOT NULL,
     NAME varchar(20)  NOT NULL,
     BALANCE real  NOT NULL,
-    USER_ID varchar(20)  NOT NULL,
+    USER_ID UUID NOT NULL,
     CONSTRAINT PORTFOLIOS_pk PRIMARY KEY (PORTFOLIO_ID)
 );
 
@@ -47,9 +49,9 @@ CREATE TABLE TRANSACTION_TYPES (
 
 -- Table: USERS
 CREATE TABLE USERS (
-    USER_ID varchar(20)  NOT NULL,
+    USER_ID UUID DEFAULT public.uuid_generate_v4()  NOT NULL,
     USERNAME varchar(20)  NOT NULL,
-    PASSWORD varchar(50)  NOT NULL,
+    PASSWORD varchar(100)  NOT NULL,
     CONSTRAINT USERS_pk PRIMARY KEY (USER_ID)
 );
 

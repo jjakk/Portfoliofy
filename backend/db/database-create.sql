@@ -1,6 +1,11 @@
 -- Created by Vertabelo (http://vertabelo.com)
 -- Last modification date: 2024-10-29 23:04:59.607
 
+DROP DATABASE IF EXISTS portfolify;
+CREATE DATABASE portfolify;
+\c portfolify
+
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- tables

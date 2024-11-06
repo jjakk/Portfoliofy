@@ -42,6 +42,10 @@ let cookieOptions = {
 };
 
 function validateLogin(body) {
+  const { username, password } = body;
+  if(username === "" || password === "") {
+    return false;
+  }
   // TODO
   return true;
 }
@@ -52,7 +56,7 @@ app.post("/auth/register", async (req, res) => {
   // TODO validate body is correct shape and type
   if (!validateLogin(body)) {
     res.status(400);
-    return res.send("Failed to validate login"); // TODO
+    return res.send("Invalid parameters passed"); // TODO
   }
 
   let { username, password } = body;
@@ -68,13 +72,14 @@ app.post("/auth/register", async (req, res) => {
     );
   } catch (error) {
     console.log("SELECT FAILED", error);
-    return res.sendStatus(500); // TODO
+    res.status(500);
+    return res.send("Failed to check the username against the database"); // TODO
   }
 
   // username does exist
   if (result.rows.length !== 0){
     res.status(400);
-    return res.send("Username does not exist");
+    return res.send("Username already in use");
   }
   
   // TODO validate username/password meet requirements
@@ -84,7 +89,8 @@ app.post("/auth/register", async (req, res) => {
     hash = await argon2.hash(password);
   } catch (error) {
     console.log("HASH FAILED", error);
-    return res.sendStatus(500); // TODO
+    res.status(500);
+    return res.send("Password hashing failed"); // TODO
   }
 
   console.log(hash); // TODO just for debugging
@@ -95,7 +101,8 @@ app.post("/auth/register", async (req, res) => {
     ]);
   } catch (error) {
     console.log("INSERT FAILED", error);
-    return res.sendStatus(500); // TODO
+    res.status(500);
+    return res.send("Failed to insert into database"); // TODO
   }
 
   // automatically log people in when they create account, because why not?
@@ -123,7 +130,8 @@ app.post("/auth/login", async (req, res) => {
     );
   } catch (error) {
     console.log("SELECT FAILED", error);
-    return res.sendStatus(500); // TODO
+    res.status(500);
+    return res.send("Failed to check the username against the database"); // TODO
   }
 
   // username doesn't exist
@@ -139,7 +147,8 @@ app.post("/auth/login", async (req, res) => {
     verifyResult = await argon2.verify(hash, password);
   } catch (error) {
     console.log("VERIFY FAILED", error);
-    return res.sendStatus(500); // TODO
+    res.status(500)
+    return res.send("Failed to verify auth token"); // TODO
   }
 
   // password didn't match
@@ -162,7 +171,8 @@ let authorize = (req, res, next) => {
   let { token } = req.cookies;
   console.log(token, tokenStorage);
   if (token === undefined || !tokenStorage.hasOwnProperty(token)) {
-    return res.sendStatus(403); // TODO
+    res.status(403);
+    return res.send("Token not found"); // TODO
   }
   next();
 };

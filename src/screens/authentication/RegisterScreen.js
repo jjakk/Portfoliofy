@@ -11,11 +11,14 @@ const RegisterScreen = () => {
 
   const onRegister = async (e) => {
     e.preventDefault();
-    if(password !== confirmPassword) {
-        setError("Passwords must match");
+    try {
+      if(password !== confirmPassword) {
+        throw new Error("Passwords must match");
+      }
+      await register({ username, password });
     }
-    else {
-        await register({ username, password });
+    catch(err) {
+      setError(err?.response?.data || err.toString());
     }
   };
   

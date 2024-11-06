@@ -8,9 +8,14 @@ export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useLocalStorage("authToken", null);
   const navigate = useNavigate();
 
-  // call this function when you want to authenticate the user
   const login = async (data) => {
     const { token } = await Api.login(data);
+    setAuthToken(token);
+    navigate("/portfolios");
+  };
+
+  const register = async (data) => {
+    const { token } = await Api.register(data);
     setAuthToken(token);
     navigate("/portfolios");
   };
@@ -25,6 +30,7 @@ export const AuthProvider = ({ children }) => {
     () => ({
       authToken,
       login,
+      register,
       logout,
     }),
     [authToken]

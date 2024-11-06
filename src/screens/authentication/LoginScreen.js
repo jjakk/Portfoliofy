@@ -5,11 +5,17 @@ import { useAuth } from "../../hooks/useAuth";
 const LoginScreen = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
   const { login } = useAuth();
 
   const onLogin = async (e) => {
     e.preventDefault();
-    await login({ username, password });
+    try {
+      await login({ username, password });
+    }
+    catch(err) {
+      setError(err?.response?.data || err.toString());
+    }
   };
   
   return (
@@ -37,6 +43,9 @@ const LoginScreen = () => {
         />
         <button type="submit" className="button">Login</button>
         <span>Don't have an account? <Link to="../register">Create one</Link></span>
+        {error && (
+          <span class="has-text-danger">{error}</span>
+        )}
       </form>
     </div>
   );

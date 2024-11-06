@@ -44,7 +44,7 @@ const LoginScreen = () => {
         <button type="submit" className="button">Login</button>
         <span>Don't have an account? <Link to="../register">Create one</Link></span>
         {error && (
-          <span class="has-text-danger">{error}</span>
+          <span className="has-text-danger">{error}</span>
         )}
       </form>
     </div>

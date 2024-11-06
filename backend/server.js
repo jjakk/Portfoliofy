@@ -110,7 +110,7 @@ app.post("/auth/register", async (req, res) => {
   let token = makeToken();
   console.log("Generated token", token);
   tokenStorage[token] = username;
-  return res.cookie("token", token, cookieOptions).send(); // TODO
+  return res.cookie("token", token, cookieOptions).json({ token }); // TODO
 });
 
 app.post("/auth/login", async (req, res) => {
@@ -154,16 +154,16 @@ app.post("/auth/login", async (req, res) => {
   // password didn't match
   console.log(verifyResult);
   if (!verifyResult) {
-    console.log("Credentials didn't match");
+    console.log("Invalid password");
     res.status(400);
-    return res.send("Credentials didn't match"); // TODO
+    return res.send("Invalid password"); // TODO
   }
 
   // generate login token, save in cookie
   let token = makeToken();
   console.log("Generated token", token);
   tokenStorage[token] = username;
-  return res.cookie("token", token, cookieOptions).send(); // TODO
+  return res.cookie("token", token, cookieOptions).json({ token }); // TODO
 });
 
 /* middleware; check if login token in token storage, if not, 403 response */

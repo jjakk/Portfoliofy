@@ -1,8 +1,12 @@
 import axios from "axios";
 
+const api = axios.create({
+    baseURL: "http://localhost:8000"
+});
+
 const login = async ({ username, password }) => {
-    const response = await axios.post("/login", { username, password });
-    console.log(response);
+    const { data } = await api.post("/auth/login", { username, password });
+    return data;
 };
 
 export default {

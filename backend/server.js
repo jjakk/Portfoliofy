@@ -199,13 +199,106 @@ app.post("/logout", (req, res) => {
   return res.clearCookie("token", cookieOptions).send();
 });
 
-app.post("/addStock", authorize, (req, res) => {
+app.post("/addStock", authorize, async (req, res) => {
     //The request body should have the stock(s) to add, quantity and timestamp of purchase (may not be current timestamp)
+    const { tickerSymbol, portfolioId, quantity, pricePerShare, timestamp } = req.body;
+
+    // Check if all parameters are defined 
+    if (!tickerSymbol || !portfolioId || !quantity || !pricePerShare) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const transactionDate = timestamp;
+
+    try {
+        // Check if stock exists in STOCKS table
+        const stockCheck = await pool.query(
+            "SELECT * FROM STOCKS WHERE TICKER_SYMBOL = $1",
+            [tickerSymbol]
+        );
+
+        if (stockCheck.rowCount === 0) {
+            await pool.query(
+                "INSERT INTO STOCKS (TICKER_SYMBOL, NAME) VALUES ($1, $2)",
+                [tickerSymbol, stockName]
+            );
+        }
+
+        // Insert new transaction into TRANSACTIONS table
+        const transactionId = generateUniqueId(); // Replace with your preferred ID generation logic
+        const totalAmount = quantity * pricePerShare;
+
+        await pool.query(
+            `INSERT INTO TRANSACTIONS (TRANSACTION_ID, TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, TYPE_ID, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [transactionId, totalAmount, quantity, pricePerShare, transactionDate, 'buy', tickerSymbol, portfolioId]
+        );
+
+        res.status(200).json({ message: "Stock added successfully", transactionId });
+    } catch (error) {
+        console.error("Error adding stock:", error);
+        res.status(500).json({ error: "An error occurred while adding the stock" });
+    }
 });
 
-app.get("/currentStocks", authorize, (req, res) => {
+
+app.get("/currentStocks", authorize, async (req, res) => {
     //The successful response body should return the stocks associated with the portfolio of the user 
+    const { userId, portfolioId } = req.query;
+
+    try {
+        // Check if the portfolio is associated with the user
+        const portfolioCheck = await pool.query(
+            "SELECT * FROM PORTFOLIOS WHERE PORTFOLIO_ID = $1 AND USER_ID = $2",
+            [portfolioId, userId]
+        );
+
+        // If no portfolio, return an error
+        if (portfolioCheck.rowCount === 0) {
+            return res.status(404).json({ error: "Portfolio not found for this user" });
+        }
+
+        // Query to get stocks associated with the portfolio
+        const result = await pool.query(
+            `SELECT s.TICKER_SYMBOL, s.NAME
+             FROM STOCKS s
+             INNER JOIN STOCKS_PORTFOLIOS sp ON s.TICKER_SYMBOL = sp.TICKER_SYMBOL
+             WHERE sp.PORTFOLIO_ID = $1`,
+            [portfolioId]
+        );
+
+        // Return the stocks data
+        res.status(200).json({ stocks: result.rows });
+    } catch (error) {
+        console.error("Error fetching stocks:", error);
+        res.status(500).json({ error: "An error occurred while retrieving stocks" });
+    }
 });
+
+app.get("/stocks", async (req, res) => {
+    const { ticker } = req.query;
+
+    if (!ticker) {
+        return res.status(400).json({ error: "Ticker symbol is required" });
+    }
+
+    try {
+        // Fetch stock data from Financial Modeling Prep API
+        const response = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${API_KEY}`);
+        const stockData = await response.json();
+
+        if (stockData.length === 0) {
+            return res.status(404).json({ error: "Stock data not found" });
+        }
+
+        // Return the stock data directly as JSON
+        res.status(200).json(stockData);
+    } catch (error) {
+        console.error("Error fetching stock data:", error);
+        res.status(500).json({ error: "An error occurred while retrieving stock data" });
+    }
+});
+
 
 app.listen(PORT, hostname, () => {
   console.log(`http://${hostname}:${PORT}`);

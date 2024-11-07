@@ -10,16 +10,16 @@ const Layout = () => {
         <h1 className="title">Portfoliofy</h1>
         <ul className="is-flex flex-direction-row gap-10">
           <li className="subtitle">
-            <NavLink activeClassName="is-active" to="/">
-              <button className="button">Home</button>
+            <NavLink className={({ isActive }) => "button " + (isActive ? "is-active" : "")} to="/">
+              Home
             </NavLink>
           </li>
           {
             authToken ? (
                 <>
                     <li className="subtitle">
-                        <NavLink activeClassName="is-active" to="/portfolios">
-                          <button className="button">Portfolios</button>
+                        <NavLink className={({ isActive }) => "button " + (isActive ? "is-active" : "")} to="/portfolios">
+                         Portfolios
                         </NavLink>
                     </li>
                     <li className="subtitle">
@@ -29,13 +29,13 @@ const Layout = () => {
             ) : (
                 <>
                     <li className="subtitle">
-                        <NavLink activeClassName="is-active" to="/auth/login">
-                          <button className="button">Login</button>
+                        <NavLink className={({ isActive }) => "button " + (isActive ? "is-active" : "")} to="/auth/login">
+                         Login
                         </NavLink>
                     </li>
                     <li className="subtitle">
-                        <NavLink activeClassName="is-active" to="/auth/register">
-                          <button className="button">Register</button>
+                        <NavLink className={({ isActive }) => "button " + (isActive ? "is-active" : "")} to="/auth/register">
+                         Register
                         </NavLink>
                     </li>
                 </>

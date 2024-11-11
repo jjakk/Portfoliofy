@@ -1,6 +1,6 @@
 const express = require("express");
 let env = require("./env.json");
-let apiKey = env["api-key"];
+let API_KEY = env["api-key"];
 let { Pool } = require("pg");
 let argon2 = require("argon2"); // or bcrypt, whatever
 let cookieParser = require("cookie-parser");
@@ -284,7 +284,7 @@ app.get("/stocks", async (req, res) => {
 
     try {
         // Fetch stock data from Financial Modeling Prep API
-        const response = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${API_KEY}`);
+        const response = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`);
         const stockData = await response.json();
 
         if (stockData.length === 0) {

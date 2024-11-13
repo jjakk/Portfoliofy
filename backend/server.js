@@ -1,5 +1,5 @@
 const express = require("express");
-let env = require("../env.json");
+let env = require("./env.json");
 let API_KEY = env["api-key"];
 let { Pool } = require("pg");
 let argon2 = require("argon2"); // or bcrypt, whatever

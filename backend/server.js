@@ -1,5 +1,5 @@
 const express = require("express");
-let env = require("./env.json");
+let env = require("../env.json");
 let API_KEY = env["api-key"];
 let { Pool } = require("pg");
 let argon2 = require("argon2"); // or bcrypt, whatever
@@ -16,7 +16,7 @@ app.use(cookieParser());
 const PORT = 8000;
 const hostname = "localhost";
 
-app.use(express.static("../public"));
+app.use(express.static("../build"));
 
 pool.connect().then(() => {
   console.log("Connected to database");
@@ -62,6 +62,7 @@ app.post("/auth/register", async (req, res) => {
   let { username, password } = body;
   console.log(username, password);
 
+ 
   // check username doesn't already exist
   
   let result;
@@ -81,9 +82,18 @@ app.post("/auth/register", async (req, res) => {
     res.status(400);
     return res.send("Username already in use");
   }
-  
-  // TODO validate username/password meet requirements
 
+  var specialCharRegex = /.([`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~])./;
+  var lowercaseRegex = /.[a-z]./;
+  var uppercaseRegex = /.[A-Z]./;
+  var numberRegex = /.[0-9]./;
+  
+  if(password.length < 12 || !specialCharRegex.test(password) || !lowercaseRegex.test(password) || !uppercaseRegex.test(password) || !numberRegex.test(password))
+  {
+    res.status(400);
+    return res.send("Password does not meet requirements. Please use at least 12 characters, at least one of each: lowercase letter, uppercase letter and special characters"); 
+  }
+  // TODO validate username meet requirements
   let hash;
   try {
     hash = await argon2.hash(password);

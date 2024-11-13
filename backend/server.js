@@ -282,58 +282,50 @@ app.get("/currentStocks", authorize, async (req, res) => {
   }
 });
 
-const fetchStockData = async (ticker) => {
-  try {
-      // Fetch stock data from Financial Modeling Prep API
-      const response = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`);
-      const stockData = await response.json();
-
-      if (!stockData || !stockData.historical) { throw new Error(`No historical data for stock: ${ticker}`); }
-
-      // Map historical data to { timestamp: value }
-      const historicalMap = stockData.historical.reduce((map, record) => {
-          map[record.date] = record.close; 
-          return map;
-      }, {});
-
-      return { ticker, historical: historicalMap };
-  } catch (error) {
-      console.error(`Error fetching data for stock ${ticker}:`, error);
-      return { ticker, error: "Failed to fetch data" };
-  }
-};
-
-app.get("/portfolio/:portfolioId", async (req, res) => {
-  const { portfolioId } = req.params;
-
-  if (!portfolioId) { return res.status(400).json({ error: "Portfolio ID is required" }); }
-
-  try {
-      const portfolio = await getPortfolioById(portfolioId);
-      if (!portfolio || !portfolio.stocks || portfolio.stocks.length === 0) {
-          return res.status(404).json({ error: "Portfolio not found or no stocks in portfolio" });
-      }
-
-      const stocks = await Promise.all(portfolio.stocks.map(fetchStockData));
-      res.status(200).json({ portfolioId, stocks });
-
-  } catch (error) {
-      console.error("Error fetching portfolio data:", error);
-      res.status(500).json({ error: "An error occurred while retrieving portfolio data" });
-  }
-});
-
-
-app.get("/stock/:ticker", async (req, res) => {
-  const { ticker } = req.params;
+app.get("/stocks", async (req, res) => {
+    const { ticker, timeframe } = req.query;
+    let from = new Date();
+    switch(timeframe) {
+      case "1d":
+        from.setDate(from.getDate() - 1);
+        break;
+      case "1w":
+        from.setDate(from.getDate() - 7);
+        break;
+      case "1m":
+        from.setDate(from.getDate() - 30);
+        break;
+      case "3m":
+        from.setDate(from.getDate() - (30 * 3));
+        break;
+      case "6m":
+        from.setDate(from.getDate() - (30 * 6));
+        break;
+      case "ytd":
+        from = new Date(new Date().getFullYear(), 0, 1);
+        break;
+      case "1y":
+        from.setDate(from.getDate() - (365));
+        break;
+      case "2y":
+        from.setDate(from.getDate() - (365 * 2));
+        break;
+      case "5y":
+        from.setDate(from.getDate() - (365 * 5));
+        break;
+      case "10y":
+        from.setDate(from.getDate() - (365 * 10));
+        break;
+    }
 
   if (!ticker) {
     return res.status(400).json({ error: "Ticker symbol is required" });
   }
 
-  try {
-    const response = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`);
-    const stockData = await response.json();
+    try {
+        // Fetch stock data from Financial Modeling Prep API
+        const response = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}&from=${from.toISOString().split('T')[0]}`);
+        const stockData = await response.json();
 
     if (stockData.length === 0) {
       return res.status(404).json({ error: "Stock data not found" });

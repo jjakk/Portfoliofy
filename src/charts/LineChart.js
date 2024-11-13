@@ -1,11 +1,11 @@
 import React, { useRef } from "react"
-import { LineChart as PlotLineChart } from "@opd/g2plot-react";
+import { AreaChart as PlotLineChart } from "@opd/g2plot-react";
 
 const config = {
   height: 350,
   autoFit: true,
-  xField: "year",
-  yField: "value",
+  xField: "date",
+  yField: "close",
   smooth: true,
   meta: {
     value: {

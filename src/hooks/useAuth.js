@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocalStorage } from "./useLocalStorage";
-import Api from "../axios/api";
+import * as Api from "../axios/api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {

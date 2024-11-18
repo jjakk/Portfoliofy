@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 -- tables
 -- Table: PORTFOLIOS
 CREATE TABLE PORTFOLIOS (
-    PORTFOLIO_ID varchar(20)  NOT NULL,
+    PORTFOLIO_ID UUID DEFAULT public.uuid_generate_v4()  NOT NULL,
     NAME varchar(20)  NOT NULL,
     BALANCE real  NOT NULL,
     USER_ID UUID NOT NULL,

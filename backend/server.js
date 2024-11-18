@@ -407,6 +407,82 @@ app.get("/portfolio/:portfolioId", async (req, res) => {
   }
 });
 
+app.post('/portfolios', async (req, res) => {
+  const { name, balance, user_id, transactions } = req.body;
+
+  if (!name || !balance || !user_id) {
+      return res.status(400).json({ error: 'Name, balance, and user_id are required.' });
+  }
+
+  if (transactions && !Array.isArray(transactions)) {
+      return res.status(400).json({ error: 'Transactions must be an array.' });
+  }
+
+  try {
+      await pool.query('BEGIN');
+
+      const insertPortfolioQuery = `
+          INSERT INTO PORTFOLIOS (NAME, BALANCE, USER_ID)
+          VALUES ($1, $2, $3)
+          RETURNING *;
+      `;
+      const portfolioValues = [name, balance, user_id];
+      const portfolioResult = await pool.query(insertPortfolioQuery, portfolioValues);
+      const portfolioId = portfolioResult.rows[0].portfolio_id;
+
+      if (transactions && transactions.length > 0) {
+          const insertTransactionQuery = `
+              INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, TYPE_ID, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID)
+              VALUES ($1, $2, $3, $4, $5, $6, $7);
+          `;
+
+          for (const transaction of transactions) {
+              const {
+                  total_amount,
+                  quantity,
+                  price_per_share,
+                  transaction_date,
+                  type_id,
+                  stocks_ticker_symbol,
+              } = transaction;
+
+              if (
+                  !total_amount ||
+                  !quantity ||
+                  !price_per_share ||
+                  !transaction_date ||
+                  !type_id ||
+                  !stocks_ticker_symbol
+              ) {
+                  throw new Error('Missing required fields in transactions.');
+              }
+
+              const transactionValues = [
+                  total_amount,
+                  quantity,
+                  price_per_share,
+                  transaction_date,
+                  type_id,
+                  stocks_ticker_symbol,
+                  portfolioId,
+              ];
+
+              await pool.query(insertTransactionQuery, transactionValues);
+          }
+      }
+
+      await pool.query('COMMIT');
+
+      res.status(200).json({
+          message: 'Portfolio created successfully.',
+      });
+  } catch (error) {
+      await pool.query('ROLLBACK');
+      console.error('Error creating portfolio and transactions:', error.message);
+      res.status(500).json({ error: 'Failed to create portfolio and transactions.' });
+  }
+});
+
 app.listen(PORT, hostname, () => {
   console.log(`http://${hostname}:${PORT}`);
 });

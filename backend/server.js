@@ -83,12 +83,8 @@ if (!validateLogin(body)) {
     return res.send("Username already in use");
   }
 
-  var specialCharRegex = /.([`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~])./;
-  var lowercaseRegex = /.[a-z]./;
-  var uppercaseRegex = /.[A-Z]./;
-  var numberRegex = /.[0-9]./;
-  
-  if(password.length < 12 || !specialCharRegex.test(password) || !lowercaseRegex.test(password) || !uppercaseRegex.test(password) || !numberRegex.test(password))
+  var passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~])/;
+  if(password.length < 12 || !passwordRegex.test(password))
   {
     res.status(400);
     return res.send("Password does not meet requirements. Please use at least 12 characters, at least one of each: lowercase letter, uppercase letter and special characters"); 

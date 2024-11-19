@@ -71,3 +71,25 @@ export default props => {
         </div>
     );
 };
+function balanceStockInput(valueObject, changedKey) {
+    let {QUANTITY, TOTAL_AMOUNT, percentOfPortfolio, PRICE_PER_SHARE, BALANCE} = valueObject;
+    switch(changedKey)
+    {
+      case "TOTAL_AMOUNT":
+        QUANTITY = TOTAL_AMOUNT/PRICE_PER_SHARE;
+        percentOfPortfolio = TOTAL_AMOUNT/BALANCE;
+        break;
+      case "percentOfPortfolio":
+        TOTAL_AMOUNT = percentOfPortfolio*BALANCE;
+        QUANTITY = TOTAL_AMOUNT/PRICE_PER_SHARE;
+        break;
+      case "PRICE_PER_SHARE" || "QUANTITY":
+        TOTAL_AMOUNT = QUANTITY*PRICE_PER_SHARE;
+        percentOfPortfolio = TOTAL_AMOUNT/BALANCE;
+        break;
+      case "BALANCE":
+        percentOfPortfolio = TOTAL_AMOUNT/BALANCE;
+        break;
+    }
+    return {QUANTITY, TOTAL_AMOUNT, percentOfPortfolio, PRICE_PER_SHARE, BALANCE}; 
+  }

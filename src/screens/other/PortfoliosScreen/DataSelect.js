@@ -4,7 +4,7 @@ import Dropdown from "../../../components/Dropdown";
 import { getStockData, getPortfolioData } from "../../../axios/api";
 
 export default props => {
-    const { setData, timeframe } = props;
+    const { startingValue, setData, setName, timeframe } = props;
 
     const dataSourceOptions = [
         { label: "Ticker Symbol", value: "ticker" },
@@ -22,8 +22,13 @@ export default props => {
         switch(dataSource.value) {
             case "ticker":
                 getStockData({ ticker, timeframe: timeframe.value }).then(({ historical }) => {
-                    setData(historical?.reverse());
+                    if(historical?.length) {
+                        historical.reverse();
+                        const shares = startingValue / historical[0]?.close;
+                        setData(historical?.map(({ close, ...rest }) => ({ ...rest, close: close * shares })));
+                    }
                 });
+                setName(ticker);
                 break;
             case "portfolio":
                 getPortfolioData().then(data => {
@@ -37,7 +42,7 @@ export default props => {
 
     useEffect(() => {
         updateData();
-    }, [dataSource, ticker, timeframe]);
+    }, [timeframe]);
 
     return (
         <div className="is-flex is-align-items-center gap-15">
@@ -62,6 +67,7 @@ export default props => {
                     onSelection={({ value }) => updateData({ dataSource: "portfolio", value })}
                 />
             ) : null}
+            <button className="button" onClick={updateData}>Select</button>
         </div>
     );
 };

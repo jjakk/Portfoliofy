@@ -18,8 +18,7 @@ const config = {
 const defaultOptions = {
   hAxis: {
     title: "Year",
-    textStyle: { color: "#FFF" },
-    titleTextStyle: { color: "#333" }
+    textStyle: { color: "#FFF" }
   },
   vAxis: {
     textStyle: { color: "#FFF" },
@@ -32,7 +31,7 @@ const defaultOptions = {
 };
 
 export default props => {
-  const { data1, data2, title } = props;
+  const { data1, data2, name1, name2 } = props;
   // const chartRef = useRef();
   const [line1Data, setLine1Data] = useState([]);
   const [options, setOptions] = useState(null);
@@ -41,7 +40,7 @@ export default props => {
     if(data1?.length) {
       setLine1Data(
         data2?.length ? [
-          ["Date", "Price", "Second Price"],
+          ["Date", name1, name2],
           ...data1.map(({ date, close }, i) => [date, close, data2[i]?.close]),
         ] : [
           ["Date", "Price"],
@@ -50,7 +49,7 @@ export default props => {
       );
       setOptions({
         ...defaultOptions,
-        title,
+        title: `${name1} vs ${name2}`,
         vAxis: {
           minValue: Math.min(...data1.map(({ close }) => close))
         }

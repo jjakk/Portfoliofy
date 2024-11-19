@@ -1,16 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import LineChart from "../../../charts/LineChart";
 import Dropdown from "../../../components/Dropdown";
-import GraphDataSelection from "./GraphDataSelection";
-
-import { getStockData, getPortfolioData } from "../../../axios/api";
+import CreatePortfolioForm from "./CreatePortfolioForm";
+import DataSelect from "./DataSelect";
 
 const PortfoliosScreen = () => {
-    const dataSourceOptions = [
-        { label: "Ticker Symbol", value: "ticker" },
-        { label: "Portfolio Name", value: "porfolio" }
-    ];
     const timeframeOptions = [
         { label: "10 Years", value: "10y" },
         { label: "5 Years", value: "5y" },
@@ -24,35 +19,9 @@ const PortfoliosScreen = () => {
         { label: "1 Day", value: "1d" },
     ];
 
-    const [backtestingData, setBackTestingData] = useState([]);
-    const [dataSource, setDataSource] = useState(dataSourceOptions[0]);
+    const [data1, setData1] = useState([]);
+    const [data2, setData2] = useState([]);
     const [timeframe, setTimeframe] = useState(timeframeOptions[0]);
-    const [ticker, setTicker] = useState("");
-
-    const updateData = () => {
-        if(!ticker) {
-            return;
-        }
-
-        switch(dataSource.value) {
-            case "ticker":
-                getStockData({ ticker, timeframe: timeframe.value }).then(({ historical }) => {
-                    setBackTestingData(historical?.reverse());
-                });
-                break;
-            case "portfolio":
-                getPortfolioData().then(data => {
-                    console.log(data);
-                });
-                break;
-            default:
-                break;
-        }
-    };
-
-    useEffect(() => {
-        updateData();
-    }, [dataSource, ticker, timeframe]);
 
     return (
         <div>
@@ -60,34 +29,23 @@ const PortfoliosScreen = () => {
                 <h2 className="title">Create Portfolio</h2>
                 <details>
                     <summary className="button">Expand/Collapse</summary>
-                    <GraphDataSelection />
+                    <CreatePortfolioForm />
                 </details>
             </section>
             <section className="section is-flex is-flex-direction-column gap-25">
                 <h2 className="title m-0">Backtesting</h2>
-                <div className="is-flex is-align-items-center gap-15">
-                    <label className="subtitle m-0">Select by</label>
-                    <Dropdown
-                        options={dataSourceOptions}
-                        onSelection={newValue => setDataSource(newValue)}
-                    />
-                    {dataSource.value === "ticker" ? (
-                        <input
-                            className="input"
-                            type="text"
-                            value={ticker}
-                            onChange={event => setTicker(event.target.value)}
-                        />
-                    ) : dataSource.value === "porfolio" ? (
-                        <Dropdown
-                            options={[
-                                { label: "Portfolio 1", value: "portfolio1" },
-                                { label: "Portfolio 2", value: "portfolio2" }
-                            ]}
-                            onSelection={({ value }) => updateData({ dataSource: "portfolio", value })}
-                        />
-                    ) : null}
-                </div>
+                <DataSelect
+                    setData={setData1}
+                    timeframe={timeframe}
+                />
+                <DataSelect
+                    setData={setData2}
+                    timeframe={timeframe}
+                />
+                <LineChart
+                    data1={data1}
+                    data2={data2}
+                />
                 <div className="is-flex is-align-items-center gap-15">
                     <label className="subtitle m-0">Timeframe</label>
                     <Dropdown
@@ -95,7 +53,6 @@ const PortfoliosScreen = () => {
                         onSelection={newValue => setTimeframe(newValue)}
                     />
                 </div>
-                <LineChart data={backtestingData} />
             </section>
         </div>
     );

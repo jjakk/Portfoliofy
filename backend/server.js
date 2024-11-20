@@ -336,70 +336,113 @@ app.get("/stock", async (req, res) => {
 });
 
 
-async function getPortfolioById(portfolioId) {
-  try {
-      const portfolioQuery = `
-          SELECT 
-              p.PORTFOLIO_ID, 
-              p.NAME, 
-              p.BALANCE, 
-              p.USER_ID,
-              ARRAY_AGG(sp.TICKER_SYMBOL) AS stocks
-          FROM PORTFOLIOS p
-          LEFT JOIN STOCKS_PORTFOLIOS sp ON p.PORTFOLIO_ID = sp.PORTFOLIO_ID
-          WHERE p.PORTFOLIO_ID = $1
-          GROUP BY p.PORTFOLIO_ID;
-      `;
+app.get("/stock/value", async (req, res) => {
+  const { ticker, date } = req.query;
 
-      const { rows } = await pool.query(portfolioQuery, [portfolioId]);
-
-      if (rows.length === 0) { return null; }
-
-      const portfolio = rows[0];
-
-      return {
-          id: portfolio.portfolio_id,
-          name: portfolio.name,
-          balance: portfolio.balance,
-          userId: portfolio.user_id,
-          stocks: portfolio.stocks || [],
-      };
-  } catch (error) {
-      console.error("Error fetching portfolio:", error);
-      throw error;
+  if (!ticker || !date) {
+    return res.status(400).json({ error: "Ticker symbol and date are required" });
   }
-}
 
-const fetchStockData = async (ticker) => {
   try {
-      // Fetch stock data from Financial Modeling Prep API
-      const response = await fetch(`https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`);
-      const stockData = await response.json();
-      if (!stockData || !stockData.historical) { throw new Error(`No historical data for stock: ${ticker}`); }
-      // Map historical data to { timestamp: value }
-      const historicalMap = stockData.historical.reduce((map, record) => {
-          map[record.date] = record.close; 
-          return map;
-      }, {});
-      return { ticker, historical: historicalMap };
+    const response = await fetch(
+      `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`
+    );
+
+    const stockData = await response.json();
+
+    if (!stockData.historical || stockData.historical.length === 0) {
+      return res.status(404).json({ error: "Stock data not found for the given ticker" });
+    }
+
+    const stockOnDate = stockData.historical.find(
+      (record) => record.date === date
+    );
+
+    if (!stockOnDate) {
+      return res.status(404).json({ error: "No data found for the specified date" });
+    }
+
+    res.status(200).json({
+      ticker,
+      date,
+      closeValue: stockOnDate.close,
+    });
   } catch (error) {
-      console.error(`Error fetching data for stock ${ticker}:`, error);
-      return { ticker, error: "Failed to fetch data" };
+    console.error("Error fetching stock value:", error);
+    res.status(500).json({ error: "An error occurred while retrieving stock value" });
+  }
+});
+
+const fetchStockDataFromDate = async (ticker, startDate) => {
+  try {
+    const response = await fetch(
+      `https://financialmodelingprep.com/api/v3/historical-price-full/${ticker}?apikey=${API_KEY}`
+    );
+    const stockData = await response.json();
+
+    if (!stockData || !stockData.historical) {
+      throw new Error(`No historical data for stock: ${ticker}`);
+    }
+
+    const filteredHistorical = stockData.historical.filter(
+      (record) => new Date(record.date) >= new Date(startDate)
+    );
+
+    const historicalMap = filteredHistorical.reduce((map, record) => {
+      map[record.date] = record.close;
+      return map;
+    }, {});
+
+    return { ticker, historical: historicalMap };
+  } catch (error) {
+    console.error(`Error fetching data for stock ${ticker}:`, error);
+    return { ticker, error: "Failed to fetch data" };
   }
 };
+
 app.get("/portfolio/:portfolioId", async (req, res) => {
   const { portfolioId } = req.params;
-  if (!portfolioId) { return res.status(400).json({ error: "Portfolio ID is required" }); }
+  if (!portfolioId) {
+    return res.status(400).json({ error: "Portfolio ID is required" });
+  }
+
   try {
-      const portfolio = await getPortfolioById(portfolioId);
-      if (!portfolio || !portfolio.stocks || portfolio.stocks.length === 0) {
-          return res.status(404).json({ error: "Portfolio not found or no stocks in portfolio" });
-      }
-      const stocks = await Promise.all(portfolio.stocks.map(fetchStockData));
-      res.status(200).json({ portfolioId, stocks });
+    const portfolioQuery = `
+      SELECT 
+          p.PORTFOLIO_ID, 
+          p.NAME, 
+          p.BALANCE, 
+          p.USER_ID,
+          t.STOCKS_TICKER_SYMBOL AS ticker,
+          MIN(t.TRANSACTION_DATE) AS purchase_date
+      FROM PORTFOLIOS p
+      LEFT JOIN TRANSACTIONS t ON p.PORTFOLIO_ID = t.PORTFOLIO_ID
+      WHERE p.PORTFOLIO_ID = $1
+      GROUP BY p.PORTFOLIO_ID, t.STOCKS_TICKER_SYMBOL;
+    `;
+
+    const { rows: portfolioData } = await pool.query(portfolioQuery, [portfolioId]);
+
+    if (!portfolioData || portfolioData.length === 0) {
+      return res.status(404).json({ error: "Portfolio not found or no transactions" });
+    }
+
+    const stocks = await Promise.all(
+      portfolioData.map((stock) =>
+        fetchStockDataFromDate(stock.ticker, stock.purchase_date)
+      )
+    );
+
+    res.status(200).json({
+      portfolioId,
+      name: portfolioData[0].name,
+      balance: portfolioData[0].balance,
+      userId: portfolioData[0].user_id,
+      stocks,
+    });
   } catch (error) {
-      console.error("Error fetching portfolio data:", error);
-      res.status(500).json({ error: "An error occurred while retrieving portfolio data" });
+    console.error("Error fetching portfolio data:", error);
+    res.status(500).json({ error: "An error occurred while retrieving portfolio data" });
   }
 });
 

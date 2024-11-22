@@ -3,11 +3,7 @@ let argon2 = require("argon2"); // or bcrypt, whatever
 let crypto = require("crypto");
 const pool = require("../db/db");
 const authRouter = express.Router();
-
-// global object for storing tokens
-// in a real app, we'd save them to a db so even if the server exits
-// users will still be logged in when it restarts
-let tokenStorage = {};
+const requireAuth = require("../middleware/requireAuth");
 
 /* returns a random 32 byte string */
 const makeToken = () => crypto.randomBytes(32).toString("hex");
@@ -29,6 +25,25 @@ const validateLogin = (body) => {
   // TODO
   return true;
 }
+
+const getToken = async (token) => {
+    const { rows } = await pool.query("SELECT * FROM TOKENS WHERE CODE = $1", [token]);
+    return rows.length ? rows[0] : null;
+};
+
+const insertToken = async (token, userId) => {
+    await pool.query(
+        "INSERT INTO TOKENS (CODE, USER_ID) VALUES ($1, $2)",
+        [token, userId]
+    );
+};
+
+const deleteTokenByUserId = async (user_id) => {
+    await pool.query(
+        "DELETE FROM TOKENS where USER_ID = $1",
+        [user_id]
+    );
+};
 
 authRouter.post("/login", async (req, res) => {
     let { body } = req;
@@ -57,7 +72,6 @@ authRouter.post("/login", async (req, res) => {
         return res.send("Username does not exist"); // TODO
     }
     let hash = result.rows[0].password;
-    console.log(username, password, hash);
 
     let verifyResult;
     try {
@@ -69,8 +83,6 @@ authRouter.post("/login", async (req, res) => {
         return res.send("Failed to verify auth token"); // TODO
     }
 
-    // password didn't match
-    console.log(verifyResult);
     if (!verifyResult) {
         console.log("Invalid password");
         res.status(400);
@@ -79,8 +91,7 @@ authRouter.post("/login", async (req, res) => {
 
     // generate login token, save in cookie
     let token = makeToken();
-    console.log("Generated token", token);
-    tokenStorage[token] = username;
+    await insertToken(token, result.rows[0].user_id);
     return res.cookie("token", token, cookieOptions).json({ token }); // TODO
 });
 
@@ -94,7 +105,6 @@ authRouter.post("/register", async (req, res) => {
     }
 
     let { username, password } = body;
-    console.log(username, password);
 
 
     // check username doesn't already exist
@@ -133,12 +143,12 @@ authRouter.post("/register", async (req, res) => {
         return res.send("Password hashing failed"); // TODO
     }
 
-    console.log(hash); // TODO just for debugging
+    let newUser;
     try {
-        await pool.query("INSERT INTO users (username, password) VALUES ($1, $2)", [
+        newUser = (await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [
             username,
             hash,
-        ]);
+        ])).rows[0];
     } catch (error) {
         console.log("INSERT FAILED", error);
         res.status(500);
@@ -148,29 +158,19 @@ authRouter.post("/register", async (req, res) => {
     // automatically log people in when they create account, because why not?
     // generate login token, save in cookie
     let token = makeToken();
-    console.log("Generated token", token);
-    tokenStorage[token] = username;
+    await insertToken(token, newUser.user_id);
     return res.cookie("token", token, cookieOptions).json({ token }); // TODO
 });
 
-authRouter.post("/logout", (req, res) => {
-    let { token } = req.cookies;
+authRouter.post("/logout", requireAuth, async (req, res) => {
     
-    if (token === undefined) {
+    if (!req.user) {
       console.log("Already logged out");
       res.status(400);
       return res.send("Already logged out"); // TODO
     }
     
-    if (!tokenStorage.hasOwnProperty(token)) {
-      console.log("Token doesn't exist");
-      res.status(400);
-      return res.send("Token doesn't exist"); // TODO
-    }
-    
-    console.log("Before", tokenStorage);
-    delete tokenStorage[token];
-    console.log("Deleted", tokenStorage);
+    deleteTokenByUserId(req.user.user_id);
     
     return res.clearCookie("token", cookieOptions).send();
 });

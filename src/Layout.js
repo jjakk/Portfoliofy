@@ -2,7 +2,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
 
 const Layout = () => {
-  const { authToken, logout } = useAuth();
+  const { authenticated, logout } = useAuth();
 
   return (
     <header className="container is-widescreen">
@@ -15,7 +15,7 @@ const Layout = () => {
             </NavLink>
           </li>
           {
-            authToken ? (
+            authenticated ? (
                 <>
                     <li className="subtitle">
                         <NavLink className={({ isActive }) => "button " + (isActive ? "is-active" : "")} to="/portfolios">

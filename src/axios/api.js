@@ -3,10 +3,31 @@ import axios from "axios";
 const api = axios.create({
     baseURL: "http://localhost:8000"
 });
+api.interceptors.request.use(
+    config => {
+        const authToken = localStorage.getItem('authToken');
+        if(authToken) {
+            config.headers['authorization'] = `Bearer ${authToken.replaceAll('"', '')}`;
+        }
+          return config;
+      },
+      error => {
+          return Promise.reject(error);
+      }
+);
+
+export const getUser = async () => {
+    const { data } = await api.get("/");
+    return data;
+};
 
 export const login = async ({ username, password }) => {
     const { data } = await api.post("/auth/login", { username, password });
     return data;
+};
+
+export const logout = async () => {
+    await api.post("/auth/logout");
 };
 
 export const register = async ({ username, password }) => {
@@ -15,7 +36,7 @@ export const register = async ({ username, password }) => {
 };
 
 export const getStockData = async ({ ticker, timeframe }) => {
-    const { data } = await api.get(`/stocks?ticker=${ticker}&timeframe=${timeframe}`);
+    const { data } = await api.get(`/stock/${ticker}?timeframe=${timeframe}`);
     return data;
 };
 

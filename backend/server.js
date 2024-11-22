@@ -1,9 +1,7 @@
 const express = require("express");
 let cookieParser = require("cookie-parser");
 const cors = require("cors");
-let env = require("./env.json");
-let { Pool } = require("pg");
-let pool = new Pool(env);
+const requireAuth = require("./middleware/requireAuth");
 const authRouter = require("./routers/authRouter");
 const portfoliosRouter = require("./routers/portfoliosRouter");
 const stockRouter = require("./routers/stockRouter");
@@ -22,8 +20,9 @@ app.use("/auth", authRouter);
 app.use("/portfolios", portfoliosRouter);
 app.use("/stock", stockRouter);
 
-pool.connect().then(() => {
-  console.log("Connected to database");
+app.get("/", requireAuth, (req, res) => {
+  res.status(200);
+  res.json(req.user);
 });
 
 app.listen(PORT, HOSTNAME, () => {

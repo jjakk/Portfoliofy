@@ -189,7 +189,71 @@ portfoliosRouter.post("/:portfolioId/addStock", requireAuth, async (req, res) =>
     res.status(500).json({ error: "An error occurred while adding the stock" });
   }
 });
-  
+
+portfoliosRouter.post("/:portfolioId/sellStock", requireAuth, async (req, res) => {
+  const { portfolioId } = req.params;
+  const { tickerSymbol, quantity, pricePerShare, timestamp } = req.body;
+
+  // Check if all required fields are provided
+  if (!tickerSymbol || !portfolioId || !quantity || !pricePerShare) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (quantity <= 0) {
+    return res.status(400).json({ error: "Quantity must be a positive number." });
+  }
+
+  try {
+    // Fetch the user's current stock holdings
+    const stockHoldingsQuery = `
+      SELECT COALESCE(SUM(QUANTITY), 0) AS total_quantity
+      FROM TRANSACTIONS
+      WHERE PORTFOLIO_ID = $1 AND STOCKS_TICKER_SYMBOL = $2;
+    `;
+    const { rows } = await pool.query(stockHoldingsQuery, [portfolioId, tickerSymbol]);
+    const totalOwnedQuantity = rows[0]?.total_quantity || 0;
+
+    // Validate if the user has enough stocks to sell
+    if (quantity > totalOwnedQuantity) {
+      return res
+        .status(400)
+        .json({ error: `Insufficient stocks. You only own ${totalOwnedQuantity} shares of ${tickerSymbol}.` });
+    }
+
+    // Prepare transaction details
+    const transactionDate = timestamp || new Date();
+    const negativePricePerShare = -Math.abs(pricePerShare); // Ensure price per share is negative
+    const totalAmount = Math.abs(quantity * pricePerShare); // Selling increases balance, so totalAmount is positive
+
+    // Start a transaction block
+    await pool.query("BEGIN");
+
+    // Insert the sell transaction
+    await pool.query(
+      `INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID)
+        VALUES ($1, $2, $3, $4, $5, $6)`,
+      [totalAmount, -quantity, negativePricePerShare, transactionDate, tickerSymbol, portfolioId]
+    );
+
+    // Update the portfolio balance
+    const updateBalanceQuery = `
+      UPDATE PORTFOLIOS
+      SET BALANCE = BALANCE + $1
+      WHERE PORTFOLIO_ID = $2;
+    `;
+    await pool.query(updateBalanceQuery, [totalAmount, portfolioId]);
+
+    // Commit the transaction block
+    await pool.query("COMMIT");
+
+    res.status(200).json({ message: "Stock sold successfully and balance updated" });
+  } catch (error) {
+    // Rollback on error
+    await pool.query("ROLLBACK");
+    console.error("Error selling stock:", error);
+    res.status(500).json({ error: "An error occurred while selling the stock" });
+  }
+});
   
 portfoliosRouter.get("/currentStocks", requireAuth, async (req, res) => {
   const { userId, portfolioId } = req.query;

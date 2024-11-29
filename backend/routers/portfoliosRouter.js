@@ -150,45 +150,85 @@ portfoliosRouter.post('/', async (req, res) => {
 
 portfoliosRouter.post("/:portfolioId/addStock", requireAuth, async (req, res) => {
   const { portfolioId } = req.params;
-  //The request body should have the stock(s) to add, quantity and timestamp of purchase (may not be current timestamp)
   const { tickerSymbol, quantity, pricePerShare, timestamp } = req.body;
 
-  // Check if all parameters are defined 
+  // Check if all parameters are defined
   if (!tickerSymbol || !portfolioId || !quantity || !pricePerShare) {
-      return res.status(400).json({ error: "Missing required fields" });
+    return res.status(400).json({ error: "Missing required fields" });
   }
 
   const transactionDate = timestamp;
 
   try {
-    // Check if stock exists in STOCKS table
+    // Fetch the portfolio balance
+    const portfolioQuery = `
+      SELECT BALANCE 
+      FROM PORTFOLIOS
+      WHERE PORTFOLIO_ID = $1;
+    `;
+    const portfolioResult = await pool.query(portfolioQuery, [portfolioId]);
+
+    if (portfolioResult.rowCount === 0) {
+      return res.status(404).json({ error: "Portfolio not found" });
+    }
+
+    const currentBalance = portfolioResult.rows[0].balance;
+
+    // Calculate the total amount for the transaction
+    const totalAmount = quantity * pricePerShare;
+
+    // Validate if the portfolio has enough balance
+    if (totalAmount > currentBalance) {
+      return res.status(400).json({
+        error: `Insufficient balance. Portfolio balance is ${currentBalance}, but the transaction requires ${totalAmount}.`,
+      });
+    }
+
+    // Check if the stock exists in the STOCKS table
     const stockCheck = await pool.query(
       "SELECT * FROM STOCKS WHERE TICKER_SYMBOL = $1",
       [tickerSymbol]
     );
 
     if (stockCheck.rowCount === 0) {
+      // If the stock doesn't exist, insert it (assuming stockName is provided elsewhere)
+      const stockName = tickerSymbol; // Default to the ticker symbol if name is unknown
       await pool.query(
         "INSERT INTO STOCKS (TICKER_SYMBOL, NAME) VALUES ($1, $2)",
         [tickerSymbol, stockName]
       );
     }
 
-    // Insert new transaction into TRANSACTIONS table
-    const totalAmount = quantity * pricePerShare;
+    // Start a transaction block
+    await pool.query("BEGIN");
 
+    // Insert the transaction into the TRANSACTIONS table
     await pool.query(
       `INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID) 
         VALUES ($1, $2, $3, $4, $5, $6)`,
       [totalAmount, quantity, pricePerShare, transactionDate, tickerSymbol, portfolioId]
     );
 
-    res.status(200).json({ message: "Stock added successfully", transactionId });
+    // Deduct the total amount from the portfolio balance
+    const updateBalanceQuery = `
+      UPDATE PORTFOLIOS
+      SET BALANCE = BALANCE - $1
+      WHERE PORTFOLIO_ID = $2;
+    `;
+    await pool.query(updateBalanceQuery, [totalAmount, portfolioId]);
+
+    // Commit the transaction block
+    await pool.query("COMMIT");
+
+    res.status(200).json({ message: "Stock added successfully and balance updated" });
   } catch (error) {
+    // Rollback on error
+    await pool.query("ROLLBACK");
     console.error("Error adding stock:", error);
     res.status(500).json({ error: "An error occurred while adding the stock" });
   }
 });
+
 
 portfoliosRouter.post("/:portfolioId/sellStock", requireAuth, async (req, res) => {
   const { portfolioId } = req.params;

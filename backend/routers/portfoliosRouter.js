@@ -100,8 +100,8 @@ portfoliosRouter.post('/', async (req, res) => {
 
       if (transactions && transactions.length > 0) {
           const insertTransactionQuery = `
-              INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, TYPE_ID, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID)
-              VALUES ($1, $2, $3, $4, $5, $6, $7);
+              INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID)
+              VALUES ($1, $2, $3, $4, $5, $6);
           `;
 
           for (const transaction of transactions) {
@@ -110,7 +110,6 @@ portfoliosRouter.post('/', async (req, res) => {
                   quantity,
                   price_per_share,
                   transaction_date,
-                  type_id,
                   stocks_ticker_symbol,
               } = transaction;
 
@@ -119,7 +118,6 @@ portfoliosRouter.post('/', async (req, res) => {
                   !quantity ||
                   !price_per_share ||
                   !transaction_date ||
-                  !type_id ||
                   !stocks_ticker_symbol
               ) {
                   throw new Error('Missing required fields in transactions.');
@@ -130,7 +128,6 @@ portfoliosRouter.post('/', async (req, res) => {
                   quantity,
                   price_per_share,
                   transaction_date,
-                  type_id,
                   stocks_ticker_symbol,
                   portfolioId,
               ];
@@ -178,13 +175,12 @@ portfoliosRouter.post("/:portfolioId/addStock", requireAuth, async (req, res) =>
     }
 
     // Insert new transaction into TRANSACTIONS table
-    const transactionId = generateUniqueId(); // Replace with your preferred ID generation logic
     const totalAmount = quantity * pricePerShare;
 
     await pool.query(
-      `INSERT INTO TRANSACTIONS (TRANSACTION_ID, TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, TYPE_ID, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [transactionId, totalAmount, quantity, pricePerShare, transactionDate, 'buy', tickerSymbol, portfolioId]
+      `INSERT INTO TRANSACTIONS (TOTAL_AMOUNT, QUANTITY, PRICE_PER_SHARE, TRANSACTION_DATE, STOCKS_TICKER_SYMBOL, PORTFOLIO_ID) 
+        VALUES ($1, $2, $3, $4, $5, $6)`,
+      [totalAmount, quantity, pricePerShare, transactionDate, tickerSymbol, portfolioId]
     );
 
     res.status(200).json({ message: "Stock added successfully", transactionId });

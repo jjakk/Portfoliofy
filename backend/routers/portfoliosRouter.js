@@ -86,6 +86,22 @@ portfoliosRouter.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Transactions must be an array.' });
   }
 
+  if (transactions && transactions.length > 0) {
+    const totalTransactionAmount = transactions.reduce((total, transaction) => {
+      if (!transaction.total_amount) {
+        throw new Error('Each transaction must include a total_amount field.');
+      }
+      return total + transaction.total_amount;
+    }, 0);
+
+    // Validate the total transaction amount
+    if (totalTransactionAmount > 10000) {
+      return res.status(400).json({
+        error: `Total transaction amount exceeds the limit of 10000. Current total is ${totalTransactionAmount}.`,
+      });
+    }
+  }
+
   try {
       await pool.query('BEGIN');
 

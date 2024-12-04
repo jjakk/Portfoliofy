@@ -30,16 +30,19 @@ const PortfoliosScreen = () => {
     useEffect(() => {
         if(data1.length && data2.length) {
             if(data1.length > data2.length) {
-                let reformattedData1 = data1.filter(({ date }) => data2.find(({ date: date2 }) => date === date2));
-                const startValue = reformattedData1[0].close;
-                reformattedData1 = reformattedData1.map(data => ({ ...data, close: data.close * 10000 / startValue }));
-                setData1(reformattedData1);
+                const reformattedData1 = data1.filter(({ date }) => data2.find(({ date: date2 }) => date === date2));
+                const startValue1 = reformattedData1[0].close;
+                setData1(reformattedData1.map(data => ({ ...data, close: data.close * 10000 / startValue1 })));
+                const startValue2 = data2[0].close;
+                setData2(data2.map(data => ({ ...data, close: data.close * 10000 / startValue2 })));
             }
             if(data2.length > data1.length) {
                 let reformattedData2 = data2.filter(({ date }) => data1.find(({ date: date2 }) => date === date2));
                 const startValue = reformattedData2[0].close;
                 reformattedData2 = reformattedData2.map(data => ({ ...data, close: data.close * 10000 / startValue }));
                 setData2(reformattedData2);
+                const startValue1 = data1[0].close;
+                setData1(data1.map(data => ({ ...data, close: data.close * 10000 / startValue1 })));
             }
         }
     }, [data1, data2]);

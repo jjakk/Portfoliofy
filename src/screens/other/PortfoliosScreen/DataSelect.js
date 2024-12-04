@@ -63,6 +63,7 @@ export default props => {
                             }
                         }
                         if(!skip) {
+                            console.log(totalValueAtDay, portfolioResponse.balance);
                             totalValueAtDay += portfolioResponse.balance;
                             values.push({ date: date.toISOString().split('T')[0], close: totalValueAtDay});
                         }

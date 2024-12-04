@@ -1,6 +1,8 @@
 -- Created by Vertabelo (http://vertabelo.com)
 -- Last modification date: 2024-10-29 23:04:59.607
 
+\c portfolify
+
 -- foreign keys
 ALTER TABLE PORTFOLIOS
     DROP CONSTRAINT PORTFOLIOS_USERS;

@@ -29,6 +29,21 @@ const fetchStockDataFromDate = async (ticker, startDate) => {
   }
 };
 
+portfoliosRouter.get("/", async (req, res) => {
+  try {
+    const portfolioQuery = `
+      SELECT * FROM PORTFOLIOS;
+    `;
+
+    const { rows: portfolioData } = await pool.query(portfolioQuery, []);
+
+    res.status(200).json(portfolioData);
+  } catch (error) {
+    console.error("Error fetching portfolio data:", error);
+    res.status(500).json({ error: "An error occurred while retrieving portfolio data" });
+  }
+});
+
 portfoliosRouter.get("/:portfolioId", async (req, res) => {
   const { portfolioId } = req.params;
   if (!portfolioId) {
@@ -75,11 +90,11 @@ portfoliosRouter.get("/:portfolioId", async (req, res) => {
   }
 });
 
-portfoliosRouter.post('/', async (req, res) => {
-  const { name, balance, user_id, transactions } = req.body;
+portfoliosRouter.post('/', requireAuth, async (req, res) => {
+  const { name, balance, transactions } = req.body;
 
-  if (!name || !balance || !user_id) {
-      return res.status(400).json({ error: 'Name, balance, and user_id are required.' });
+  if (!name || !balance) {
+      return res.status(400).json({ error: 'Name, & balance, are required.' });
   }
 
   if (transactions && !Array.isArray(transactions)) {
@@ -110,7 +125,7 @@ portfoliosRouter.post('/', async (req, res) => {
           VALUES ($1, $2, $3)
           RETURNING *;
       `;
-      const portfolioValues = [name, balance, user_id];
+      const portfolioValues = [name, balance, req.user.user_id];
       const portfolioResult = await pool.query(insertPortfolioQuery, portfolioValues);
       const portfolioId = portfolioResult.rows[0].portfolio_id;
 
@@ -147,6 +162,7 @@ portfoliosRouter.post('/', async (req, res) => {
                   stocks_ticker_symbol,
                   portfolioId,
               ];
+              console.log(transactionValues);
 
               await pool.query(insertTransactionQuery, transactionValues);
           }
@@ -311,8 +327,9 @@ portfoliosRouter.post("/:portfolioId/sellStock", requireAuth, async (req, res) =
   }
 });
   
-portfoliosRouter.get("/currentStocks", requireAuth, async (req, res) => {
-  const { userId, portfolioId } = req.query;
+portfoliosRouter.get("/:porfolioId/currentStocks", requireAuth, async (req, res) => {
+  const { portfolioId } = req.params;
+  const { userId } = req.query;
   //The successful response body should return the stocks associated with the portfolio of the user 
   try {
     // Check if the portfolio is associated with the user

@@ -40,7 +40,21 @@ export const getStockData = async ({ ticker, timeframe }) => {
     return data;
 };
 
+export const getHistoricalStockPrice = async ({ ticker, date }) => {
+    const { data } = await api.get(`/stock/${ticker}?date=${date}`);
+    return data;
+};
+
 export const getPortfolioData = async ({ name }) => {
     const { data } = await api.get(`/currentStocks?userId=null&portfolioId=null`);
     return data;
+};
+
+export const postPortfolio = async ({ name, balance, transactions }) => {
+    console.log({
+        name,
+        balance,
+        transactions
+    });
+    await api.post("portfolios", { name, balance, transactions });
 };

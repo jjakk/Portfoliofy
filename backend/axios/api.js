@@ -11,7 +11,6 @@ const getStockHistory = async ({ ticker, startDate }) => {
     if(startDate)
         queryURL += `&from=${startDate.toISOString().split('T')[0]}`;
 
-    console.log(queryURL);
     const response = await apiInstance.get(queryURL);
     // console.log(response);
     const { data } = response;

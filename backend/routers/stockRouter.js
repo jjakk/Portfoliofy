@@ -9,22 +9,24 @@ stockRouter.get("/:ticker", async (req, res) => {
   try {
     const { ticker } = req.params;
     const { timeframe, date } = req.query;
-    const startDate = getStartDateFromTimeframe(timeframe);
+    let startDate;
+    if(timeframe) {
+      startDate = getStartDateFromTimeframe(timeframe);
+    }
 
     if (!ticker)
       return res.status(400).json({ error: "Ticker symbol is required" });
 
     const stockData = await getStockHistory({ ticker, startDate });
 
-
     if (stockData.length === 0)
-      return res.status(404).json({ error: "Stock data not found" });
+      return res.json({ ticker, date, closeValue: null });
 
     // If a date is provided, only return the stock price at that given date
     if(date) {
       const stockOnDate = stockData.historical.find(record => record.date === date);
       if (!stockOnDate)
-        return res.status(404).json({ error: "No data found for the specified date" });
+        return res.json({ ticker, date, closeValue: null });
 
       res.status(200).json({ ticker, date, closeValue: stockOnDate.close });
     }

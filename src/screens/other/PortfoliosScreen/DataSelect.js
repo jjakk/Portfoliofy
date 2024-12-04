@@ -83,9 +83,9 @@ export default props => {
 
     useEffect(() => {
         Api.getPortfolios().then(portfolios => {
-            setPortfolioOptions(
-                portfolios.map(({ name, portfolio_id }) => ({ label: name, value: portfolio_id }))
-            );
+            const options = portfolios.map(({ name, portfolio_id }) => ({ label: name, value: portfolio_id }));
+            setPortfolio({ name: options[0]?.label, id: options[0]?.value });
+            setPortfolioOptions(options);
         });
     }, []);
 

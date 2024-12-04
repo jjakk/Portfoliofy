@@ -5,9 +5,9 @@ const portfoliosRouter = express.Router();
 
 const requireAuth = require("../middleware/requireAuth");
 
-const fetchStockDataFromDate = async (ticker, startDate) => {
+const fetchStockDataFromDate = async (ticker, startDate, quantity=null) => {
   try {
-    const stockData = getStockHistory({ ticker });
+    const stockData = await getStockHistory({ ticker });
 
     if (!stockData || !stockData.historical) {
       throw new Error(`No historical data for stock: ${ticker}`);
@@ -22,7 +22,7 @@ const fetchStockDataFromDate = async (ticker, startDate) => {
       return map;
     }, {});
 
-    return { ticker, historical: historicalMap };
+    return { ticker, quantity, historical: historicalMap };
   } catch (error) {
     console.error(`Error fetching data for stock ${ticker}:`, error);
     return { ticker, error: "Failed to fetch data" };
@@ -57,12 +57,13 @@ portfoliosRouter.get("/:portfolioId", async (req, res) => {
           p.NAME, 
           p.BALANCE, 
           p.USER_ID,
+          t.QUANTITY,
           t.STOCKS_TICKER_SYMBOL AS ticker,
           MIN(t.TRANSACTION_DATE) AS purchase_date
       FROM PORTFOLIOS p
       LEFT JOIN TRANSACTIONS t ON p.PORTFOLIO_ID = t.PORTFOLIO_ID
       WHERE p.PORTFOLIO_ID = $1
-      GROUP BY p.PORTFOLIO_ID, t.STOCKS_TICKER_SYMBOL;
+      GROUP BY p.PORTFOLIO_ID, t.QUANTITY, t.STOCKS_TICKER_SYMBOL;
     `;
 
     const { rows: portfolioData } = await pool.query(portfolioQuery, [portfolioId]);
@@ -72,8 +73,8 @@ portfoliosRouter.get("/:portfolioId", async (req, res) => {
     }
 
     const stocks = await Promise.all(
-      portfolioData.map((stock) =>
-        fetchStockDataFromDate(stock.ticker, stock.purchase_date)
+      portfolioData.map((stock) => 
+        fetchStockDataFromDate(stock.ticker, stock.purchase_date, stock.quantity)
       )
     );
 
@@ -162,7 +163,6 @@ portfoliosRouter.post('/', requireAuth, async (req, res) => {
                   stocks_ticker_symbol,
                   portfolioId,
               ];
-              console.log(transactionValues);
 
               await pool.query(insertTransactionQuery, transactionValues);
           }

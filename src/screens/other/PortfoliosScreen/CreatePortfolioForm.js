@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import * as Api from "../../../axios/api";
 import TransactionInput from "./TransactionInput";
 
-export default () => {
+export default props => {
     const transactionTemplate = {
         transactionType: "buy",
         ticker: null,
@@ -16,6 +16,11 @@ export default () => {
     const [transactions, setTransactions] = useState([]);
     const [remainingBalance, setRemainingBalance] = useState(startingCapital);
 
+    const resetForm = () => {
+        setName("");
+        setTransactions([]);
+        setRemainingBalance(startingCapital);
+    };
     const addTransaction = () =>  setTransactions([...transactions, { ...transactionTemplate }]);
     const createPortfolio = async () => {
         await Api.postPortfolio({
@@ -37,6 +42,8 @@ export default () => {
                     stocks_ticker_symbol: ticker,
                 }))
         });
+        alert(`Portfolio "${name}" created successfully`);
+        resetForm();
     };
 
     useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import LineChart from "../../../charts/LineChart";
 import Dropdown from "../../../components/Dropdown";
@@ -25,7 +25,7 @@ const PortfoliosScreen = () => {
     const [data2, setData2] = useState([]);
     const [name2, setName2] = useState([]);
     const [timeframe, setTimeframe] = useState(timeframeOptions[0]);
-
+    
     return (
         <div>
             <section className="section">
@@ -49,7 +49,6 @@ const PortfoliosScreen = () => {
                     startingValue={startingValue}
                     timeframe={timeframe}
                 />
-                {/* <button className="button is-align-self-flex-start">Generate</button> */}
                 <LineChart
                     data1={data1}
                     name1={name1}

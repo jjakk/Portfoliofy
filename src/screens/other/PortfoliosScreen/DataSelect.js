@@ -1,27 +1,33 @@
 import { useState, useEffect } from "react";
 
 import Dropdown from "../../../components/Dropdown";
-import { getStockData, getPortfolioData } from "../../../axios/api";
+import * as Api from "../../../axios/api";
 
 export default props => {
     const { startingValue, setData, setName, timeframe } = props;
+    const [portfolioOptions, setPortfolioOptions] = useState(null);
 
     const dataSourceOptions = [
         { label: "Ticker Symbol", value: "ticker" },
-        { label: "Portfolio Name", value: "porfolio" }
+        { label: "Portfolio Name", value: "portfolio" }
     ];
 
     const [dataSource, setDataSource] = useState(dataSourceOptions[0]);
     const [ticker, setTicker] = useState("");
+    const [portfolio, setPortfolio] = useState({});
 
+    const addDays = (date, days) => {
+        const newDate = new Date(date);
+        newDate.setDate(date.getDate() + days);
+        return newDate;
+    }
     const updateData = () => {
-        if(!ticker) {
-            return;
-        }
-
         switch(dataSource.value) {
             case "ticker":
-                getStockData({ ticker, timeframe: timeframe.value }).then(({ historical }) => {
+                if(!ticker) {
+                    return;
+                }
+                Api.getStockData({ ticker, timeframe: timeframe.value }).then(({ historical }) => {
                     if(historical?.length) {
                         historical.reverse();
                         const shares = startingValue / historical[0]?.close;
@@ -31,9 +37,40 @@ export default props => {
                 setName(ticker);
                 break;
             case "portfolio":
-                getPortfolioData().then(data => {
-                    console.log(data);
+                Api.getPortfolioData({ id: portfolio.id }).then(portfolioResponse => {
+                    const { stocks } = portfolioResponse;
+                    let earliestDate = new Date();
+                    for(const stock of stocks) {
+                        const { historical } = stock;
+                        for(const [date, value] of Object.entries(historical)) {
+                            if(new Date(date) < earliestDate) {
+                                earliestDate = new Date(date);
+                            }
+                        }
+                    }
+                    const values = [];
+                    let date = earliestDate;
+                    while(date < new Date()){
+                        let totalValueAtDay = 0;
+                        let skip = false;
+                        for(const stock of stocks) {
+                            const valueAtDay = stock.historical[date.toISOString().split('T')[0]];
+                            if(valueAtDay) {
+                                totalValueAtDay += (valueAtDay * stock.quantity);
+                            }
+                            else {
+                                skip = true;
+                            }
+                        }
+                        if(!skip) {
+                            totalValueAtDay += portfolioResponse.balance;
+                            values.push({ date: date.toISOString().split('T')[0], close: totalValueAtDay});
+                        }
+                        date = addDays(date, 1);
+                    }
+                    setData(values);
                 });
+                setName(portfolio.name);
                 break;
             default:
                 break;
@@ -43,6 +80,14 @@ export default props => {
     useEffect(() => {
         updateData();
     }, [timeframe]);
+
+    useEffect(() => {
+        Api.getPortfolios().then(portfolios => {
+            setPortfolioOptions(
+                portfolios.map(({ name, portfolio_id }) => ({ label: name, value: portfolio_id }))
+            );
+        });
+    }, []);
 
     return (
         <div className="is-flex is-align-items-center gap-15">
@@ -58,13 +103,10 @@ export default props => {
                     value={ticker}
                     onChange={event => setTicker(event.target.value)}
                 />
-            ) : dataSource.value === "porfolio" ? (
+            ) : dataSource.value === "portfolio" ? (
                 <Dropdown
-                    options={[
-                        { label: "Portfolio 1", value: "portfolio1" },
-                        { label: "Portfolio 2", value: "portfolio2" }
-                    ]}
-                    onSelection={({ value }) => updateData({ dataSource: "portfolio", value })}
+                    options={portfolioOptions}
+                    onSelection={({ label, value }) => setPortfolio({ name: label, id: value })}
                 />
             ) : null}
             <button className="button" onClick={updateData}>Select</button>

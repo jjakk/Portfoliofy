@@ -38,6 +38,7 @@ export default props => {
 
   useEffect(() => {
     if(data1?.length) {
+      console.log(data1, data2);
       setLine1Data(
         data2?.length ? [
           ["Date", name1, name2],

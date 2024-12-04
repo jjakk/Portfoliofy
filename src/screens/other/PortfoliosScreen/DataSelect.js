@@ -4,7 +4,7 @@ import Dropdown from "../../../components/Dropdown";
 import * as Api from "../../../axios/api";
 
 export default props => {
-    const { startingValue, setData, setName, timeframe } = props;
+    const { startingDate, startingValue, setData, setName, timeframe } = props;
     const [portfolioOptions, setPortfolioOptions] = useState(null);
 
     const dataSourceOptions = [
@@ -79,7 +79,7 @@ export default props => {
 
     useEffect(() => {
         updateData();
-    }, [timeframe]);
+    }, [timeframe, startingDate]);
 
     useEffect(() => {
         Api.getPortfolios().then(portfolios => {

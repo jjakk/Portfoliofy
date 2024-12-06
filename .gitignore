@@ -2,6 +2,7 @@
 
 # enviornment variables
 env.json
+.env
 
 # dependencies
 **/node_modules

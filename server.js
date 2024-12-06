@@ -8,7 +8,6 @@ const stockRouter = require("./routers/stockRouter");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
-const HOSTNAME = process.env.HOSTNAME || "localhost";
 
 require("dotenv").config()
 app.use(cors());
@@ -25,6 +24,6 @@ app.get("/", requireAuth, (req, res) => {
   res.json(req.user);
 });
 
-app.listen(PORT, HOSTNAME, () => {
-  console.log(`http://${HOSTNAME}:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`http://${process.env.HOSTNAME || "localhost"}:${PORT}`);
 });

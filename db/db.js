@@ -1,5 +1,10 @@
-let { Pool } = require("pg");
-let pool = new Pool({
+let { Pool, Client } = require("pg");
+let pool = process.env.DATABASE_URL ? new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+}) : new Pool({
     user: "postgres",
     database: "portfolify"
 });

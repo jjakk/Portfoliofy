@@ -8,12 +8,12 @@ const stockRouter = require("./routers/stockRouter");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
-const HOSTNAME = "localhost";
+const HOSTNAME = process.env.HOSTNAME || "localhost";
 
+require("dotenv").config()
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static("../build"));
 
 // Routers
 app.use("/auth", authRouter);

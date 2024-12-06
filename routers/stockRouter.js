@@ -1,6 +1,4 @@
 const express = require("express");
-let env = require("../env.json");
-let API_KEY = env["api-key"];
 const stockRouter = express.Router();
 const { getStartDateFromTimeframe } = require("../helpers");
 const { getStockHistory } = require("../axios/api");

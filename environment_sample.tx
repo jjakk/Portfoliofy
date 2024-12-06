@@ -1,0 +1,3 @@
+API_KEY="your_api_key"
+
+// We used .env in conjunction with the "dot-env" library so this is how it would be formatted

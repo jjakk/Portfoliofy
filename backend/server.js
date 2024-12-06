@@ -7,7 +7,7 @@ const portfoliosRouter = require("./routers/portfoliosRouter");
 const stockRouter = require("./routers/stockRouter");
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 const HOSTNAME = "localhost";
 
 app.use(cors());

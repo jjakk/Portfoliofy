@@ -2,7 +2,9 @@ const pool = require("../db/db");
 
 /* middleware; check if login token in token storage, if not, 403 response */
 let requireAuth = async (req, res, next) => {
-  const token = req.headers["authorization"].replace("Bearer ", "");
+  const token = req.headers["authorization"]
+    ? req.headers["authorization"].replace("Bearer ", "")
+    : "";
   const { rows: [tokenCell] } = await pool.query("SELECT * FROM TOKENS WHERE CODE = $1", [token]);
   if (token === undefined || !tokenCell) {
     res.status(403);

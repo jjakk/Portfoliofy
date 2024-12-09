@@ -2,6 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
     baseURL: "https://portfoliofy-app-fcee0492b7c9.herokuapp.com/"
+    // baseURL: "http://localhost:8000"
 });
 api.interceptors.request.use(
     config => {

@@ -1,6 +1,5 @@
 const axios = require("axios");
-let env = require("../env.json");
-let API_KEY = env["api-key"];
+let API_KEY = process.env.API_KEY;
 
 const apiInstance = axios.create({
     baseURL: "https://financialmodelingprep.com/api/v3",

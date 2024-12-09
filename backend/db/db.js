@@ -1,6 +1,13 @@
-let { Pool } = require("pg");
-let env = require("../env.json");
-let pool = new Pool(env.db);
+let { Pool, Client } = require("pg");
+let pool = process.env.DATABASE_URL ? new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+}) : new Pool({
+    user: "postgres",
+    database: "portfolify"
+});
 
 pool.connect().then(() => {
     pool.query("SELECT current_database()").then(({ rows: [{ current_database }] }) => {

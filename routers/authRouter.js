@@ -59,7 +59,7 @@ authRouter.post("/login", async (req, res) => {
         let result;
         try {
             result = await pool.query(
-                "SELECT password FROM users WHERE username = $1",
+                "SELECT * FROM users WHERE username = $1",
                 [username],
             );
         } catch (error) {
